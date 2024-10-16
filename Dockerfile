@@ -1,20 +1,26 @@
-# Use Golang image based on Debian Bookworm
-FROM golang:bookworm
+# Stage 1: Install dependencies
+FROM golang:bookworm AS deps
 
-# Set the working directory within the container
 WORKDIR /app
 
-# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
-# Download dependencies
 RUN go mod download
 
-# Copy the rest of the application source code
+# Stage 2: Build the application
+FROM golang:bookworm AS builder
+
+WORKDIR /app
+
+COPY --from=deps /go/pkg /go/pkg
 COPY . .
 
-# Build the Go application
-RUN go build -o main .
+RUN go build -ldflags="-w -s" -o main .
+
+# Final stage: Run the application
+FROM debian:bookworm-slim
+
+WORKDIR /app
 
 # Add environment variables for UID and GID
 ARG DOCKER_UID=1000
@@ -24,6 +30,8 @@ ARG DOCKER_GID=1000
 RUN groupadd -g ${DOCKER_GID} appgroup && \
     useradd -u ${DOCKER_UID} -g appgroup -m appuser
 
+# Copy the built application
+COPY --from=builder /app/main .
 # Change ownership of the working directory
 RUN chown -R appuser:appgroup /app
 

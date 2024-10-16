@@ -11,8 +11,10 @@ services:
       - VIRTUAL_HOST=${RELAY_URL}
       - VIRTUAL_PORT=3355
     volumes:
-      - "./db:/app/db"
-      - "./templates:/app/templates"
+      - ./db:/app/db
+      - ./templates:/app/templates
+      - ./relays_blastr.json:/app/relays_blastr.json:ro
+      - ./relays_import.json:/app/relays_import.json:ro
     user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     network_mode: bridge
     restart: unless-stopped
