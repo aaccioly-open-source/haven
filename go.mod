@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.36
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.63.0
 	github.com/fiatjaf/eventstore v0.14.0
-	github.com/fiatjaf/khatru v0.11.0
+	github.com/fiatjaf/khatru v0.12.0
 	github.com/joho/godotenv v1.5.1
 	github.com/nbd-wtf/go-nostr v0.42.2
 	github.com/puzpuzpuz/xsync/v3 v3.4.0
@@ -94,5 +94,3 @@ require (
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 )
-
-replace github.com/fiatjaf/khatru => github.com/aaccioly-open-source/khatru v0.0.0-20241121230217-043f2aed074a
