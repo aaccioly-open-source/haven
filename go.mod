@@ -1,8 +1,6 @@
 module github.com/bitvora/haven
 
-go 1.23.1
-
-toolchain go1.23.2
+go 1.24.0
 
 require (
 	cloud.google.com/go/storage v1.49.0
