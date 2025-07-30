@@ -438,7 +438,7 @@ upstream {{ $vpath.upstream }} {
 {{- end }}
 
 {{- define "access_log" }}
-    {{- when .Enable "access_log /var/log/nginx/access.log vhost;" "" }}
+    {{- when .Enable "access_log /var/log/nginx/access.log vhost if=$allow_and_log;" "" }}
 {{- end }}
 
 map $proxy_add_x_forwarded_for $proxy_x_forwarded_for {
@@ -939,6 +939,10 @@ server {
     listen [::]:{{ $globals.config.external_http_port }} {{- $default_server }} {{- $proxy_protocol }};
         {{- end }}
 
+    if ($allow_and_log = 0) {
+        return 444;
+    }
+
         {{- if (or $vhost.acme_http_challenge_legacy $vhost.acme_http_challenge_enabled) }}
     # Do not HTTPS redirect Let's Encrypt ACME challenge
     location ^~ /.well-known/acme-challenge/ {
@@ -1028,6 +1032,10 @@ server {
 
         {{- if $vhost.cert_ok }}
             {{- template "ssl_policy" (dict "ssl_policy" $vhost.ssl_policy) }}
+
+    if ($allow_and_log = 0) {
+        return 444;
+    }
 
     ssl_session_timeout 5m;
     ssl_session_cache shared:SSL:50m;
