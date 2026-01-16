@@ -7,9 +7,12 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
+
+const DEFAULT_WOT_REFRESH_INTERVAL time.Duration = 24 * time.Hour
 
 type AwsConfig struct {
 	AccessKeyID     string `json:"access"`
@@ -49,7 +52,7 @@ type Config struct {
 	ChatRelayDescription                 string     `json:"chat_relay_description"`
 	ChatRelayIcon                        string     `json:"chat_relay_icon"`
 	ChatRelayWotDepth                    int        `json:"chat_relay_wot_depth"`
-	ChatRelayWotRefreshIntervalHours     int        `json:"chat_relay_wot_refresh_interval_hours"`
+	ChatRelayWotRefreshInterval          time.Duration `json:"chat_relay_wot_refresh_interval"`
 	ChatRelayMinimumFollowers            int        `json:"chat_relay_minimum_followers"`
 	ChatRelayAllowKind4                  bool       `json:"chat_relay_allow_kind_4"`
 	OutboxRelayName                      string     `json:"outbox_relay_name"`
@@ -79,6 +82,12 @@ type Config struct {
 func loadConfig() Config {
 	_ = godotenv.Load(".env")
 
+	wotRefreshIntervalEnv := getEnv("CHAT_RELAY_WOT_REFRESH_INTERVAL")
+	wotRefreshInterval, err := time.ParseDuration(wotRefreshIntervalEnv)
+	if err != nil {
+		wotRefreshInterval = DEFAULT_WOT_REFRESH_INTERVAL
+	}
+
 	return Config{
 		OwnerNpub:                            getEnv("OWNER_NPUB"),
 		DBEngine:                             getEnvString("DB_ENGINE", "lmdb"),
@@ -98,7 +107,7 @@ func loadConfig() Config {
 		ChatRelayDescription:                 getEnv("CHAT_RELAY_DESCRIPTION"),
 		ChatRelayIcon:                        getEnv("CHAT_RELAY_ICON"),
 		ChatRelayWotDepth:                    getEnvInt("CHAT_RELAY_WOT_DEPTH", 0),
-		ChatRelayWotRefreshIntervalHours:     getEnvInt("CHAT_RELAY_WOT_REFRESH_INTERVAL_HOURS", 0),
+		ChatRelayWotRefreshInterval:          wotRefreshInterval,
 		ChatRelayMinimumFollowers:            getEnvInt("CHAT_RELAY_MINIMUM_FOLLOWERS", 0),
 		OutboxRelayName:                      getEnv("OUTBOX_RELAY_NAME"),
 		OutboxRelayNpub:                      getEnv("OUTBOX_RELAY_NPUB"),
