@@ -100,6 +100,7 @@ func loadConfig() Config {
 		ChatRelayIcon:                        getEnv("CHAT_RELAY_ICON"),
 		ChatRelayWotDepth:                    getEnvInt("CHAT_RELAY_WOT_DEPTH", 0),
 		ChatRelayMinimumFollowers:            getEnvInt("CHAT_RELAY_MINIMUM_FOLLOWERS", 0),
+		ChatRelayAllowKind4:                  getEnvBool("CHAT_RELAY_ALLOW_KIND_4", false),
 		OutboxRelayName:                      getEnv("OUTBOX_RELAY_NAME"),
 		OutboxRelayNpub:                      getEnv("OUTBOX_RELAY_NPUB"),
 		OutboxRelayDescription:               getEnv("OUTBOX_RELAY_DESCRIPTION"),
