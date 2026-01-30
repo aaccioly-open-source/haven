@@ -233,34 +233,34 @@ func initRelays(ctx context.Context) {
 
 	allowedKinds := map[int]struct{}{
 		// Regular kinds
-		nostr.KindSimpleGroupChatMessage: struct{}{},
+		nostr.KindSimpleGroupChatMessage:   struct{}{},
 		nostr.KindSimpleGroupThreadedReply: struct{}{},
-		nostr.KindSimpleGroupThread: struct{}{},
-		nostr.KindSimpleGroupReply: struct{}{},
-		nostr.KindChannelMessage: struct{}{},
-		nostr.KindChannelHideMessage: struct{}{},
+		nostr.KindSimpleGroupThread:        struct{}{},
+		nostr.KindSimpleGroupReply:         struct{}{},
+		nostr.KindChannelMessage:           struct{}{},
+		nostr.KindChannelHideMessage:       struct{}{},
 
 		nostr.KindGiftWrap: struct{}{},
 
-		nostr.KindSimpleGroupPutUser: struct{}{},
-		nostr.KindSimpleGroupRemoveUser: struct{}{},
+		nostr.KindSimpleGroupPutUser:      struct{}{},
+		nostr.KindSimpleGroupRemoveUser:   struct{}{},
 		nostr.KindSimpleGroupEditMetadata: struct{}{},
-		nostr.KindSimpleGroupDeleteEvent: struct{}{},
-		nostr.KindSimpleGroupCreateGroup: struct{}{},
-		nostr.KindSimpleGroupDeleteGroup: struct{}{},
+		nostr.KindSimpleGroupDeleteEvent:  struct{}{},
+		nostr.KindSimpleGroupCreateGroup:  struct{}{},
+		nostr.KindSimpleGroupDeleteGroup:  struct{}{},
 		nostr.KindSimpleGroupCreateInvite: struct{}{},
-		nostr.KindSimpleGroupJoinRequest: struct{}{},
+		nostr.KindSimpleGroupJoinRequest:  struct{}{},
 		nostr.KindSimpleGroupLeaveRequest: struct{}{},
 
 		// Addressable kinds
 		nostr.KindSimpleGroupMetadata: struct{}{},
-		nostr.KindSimpleGroupAdmins: struct{}{},
-		nostr.KindSimpleGroupMembers: struct{}{},
-		nostr.KindSimpleGroupRoles: struct{}{},
+		nostr.KindSimpleGroupAdmins:   struct{}{},
+		nostr.KindSimpleGroupMembers:  struct{}{},
+		nostr.KindSimpleGroupRoles:    struct{}{},
 	}
 
 	if config.ChatRelayAllowKind4 {
-		allowedKinds = append(allowedKinds, nostr.KindEncryptedDirectMessage)
+		allowedKinds[nostr.KindEncryptedDirectMessage] = struct{}{}
 	}
 
 	chatRelay.RejectEvent = append(chatRelay.RejectEvent, func(ctx context.Context, event *nostr.Event) (bool, string) {
