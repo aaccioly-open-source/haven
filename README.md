@@ -16,7 +16,7 @@ HAVEN (High Availability Vault for Events on Nostr) is the most sovereign person
 
 ## Not So Dumb Relay Features
 
-**Web of Trust**: Protected from DM and Inbox spam by using a web of trust.
+**Web of Trust**: Protected from DM and Inbox spam by using a Web of Trust (WoT). See the [Web of Trust Documentation](docs/wot.md) for more details.
 
 **Inbox Relay**: Notes are pulled from other relays and stored in the inbox relay.
 
