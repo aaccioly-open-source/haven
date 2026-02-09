@@ -26,6 +26,8 @@ HAVEN (High Availability Vault for Events on Nostr) is the most sovereign person
 
 **Import Old Notes**: Import your old notes and notes you're tagged in from other relays.
 
+**JSONL Export/Import**: It is your data, export to JSONL at any time. See the [JSONL Documentation](docs/jsonl.md) for more details.
+
 ## Installation
 
 ### Option 1: Download Pre-built Binaries (Recommended)
