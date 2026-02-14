@@ -3,15 +3,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/bitvora/haven/internal/cloud"
 )
 
 func runBackup(ctx context.Context) {
@@ -20,6 +19,7 @@ func runBackup(ctx context.Context) {
 	relayShort := backupCmd.String("r", "", "Relay name (shorthand)")
 	output := backupCmd.String("output", "", "Output file (shorthand)")
 	outputShort := backupCmd.String("o", "", "Output file (shorthand)")
+	toCloud := backupCmd.Bool("to-cloud", false, "Upload backup to cloud storage")
 
 	args := os.Args[2:]
 	var flags []string
@@ -29,7 +29,10 @@ func runBackup(ctx context.Context) {
 		if strings.HasPrefix(arg, "-") {
 			flags = append(flags, arg)
 			// Check if it's a flag that takes a value
-			// In our case, all flags (relay, r, output, o) take values.
+			// In our case, all flags (relay, r, output, o) take values, but to-cloud does not.
+			if arg == "--to-cloud" {
+				continue
+			}
 			if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				flags = append(flags, args[i+1])
 				i++
@@ -77,6 +80,16 @@ func runBackup(ctx context.Context) {
 			log.Fatal("🚫 backup failed:", err)
 		}
 	}
+
+	if *toCloud {
+		cloudProvider, err := getCloudProvider()
+		if err != nil {
+			log.Fatal("🚫 ", err)
+		}
+		if err := uploadBackupToCloud(ctx, cloudProvider, fileName); err != nil {
+			log.Fatal("🚫 ", err)
+		}
+	}
 }
 
 func runRestore(ctx context.Context) {
@@ -85,6 +98,7 @@ func runRestore(ctx context.Context) {
 	relayShort := restoreCmd.String("r", "", "Relay name (shorthand)")
 	input := restoreCmd.String("input", "", "Input file (shorthand)")
 	inputShort := restoreCmd.String("i", "", "Input file (shorthand)")
+	fromCloud := restoreCmd.Bool("from-cloud", false, "Download backup from cloud storage")
 
 	args := os.Args[2:]
 	var flags []string
@@ -93,6 +107,9 @@ func runRestore(ctx context.Context) {
 		arg := args[i]
 		if strings.HasPrefix(arg, "-") {
 			flags = append(flags, arg)
+			if arg == "--from-cloud" {
+				continue
+			}
 			if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				flags = append(flags, args[i+1])
 				i++
@@ -115,20 +132,27 @@ func runRestore(ctx context.Context) {
 	}
 
 	parsedArgs := restoreCmd.Args()
-	if len(parsedArgs) == 0 && *input == "" && *inputShort == "" {
-		log.Fatal("🚫 usage: haven restore <file> or haven restore -i <file>")
-	}
-
-	fileName := ""
+	fileName := "haven_backup.zip"
 	if len(parsedArgs) > 0 {
 		fileName = parsedArgs[0]
 	}
+
 	targetInput := *input
 	if targetInput == "" {
 		targetInput = *inputShort
 	}
 	if targetInput != "" {
 		fileName = targetInput
+	}
+
+	if *fromCloud {
+		cloudProvider, err := getCloudProvider()
+		if err != nil {
+			log.Fatal("🚫 ", err)
+		}
+		if err := downloadBackupFromCloud(ctx, cloudProvider, fileName); err != nil {
+			log.Fatal("🚫 ", err)
+		}
 	}
 
 	if strings.HasSuffix(fileName, ".jsonl") {
@@ -150,8 +174,9 @@ func runRestore(ctx context.Context) {
 // The backup interval is defined by the BACKUP_INTERVAL_HOURS environment variable.
 // For more details on configuration, see docs/backup.md#periodic-cloud-backups.
 func startPeriodicCloudBackups(ctx context.Context) {
-	if config.BackupProvider == "none" || config.BackupProvider == "" {
-		log.Println("🚫 no backup provider set")
+	cloudProvider, err := getCloudProvider()
+	if err != nil {
+		log.Printf("⚠️ Cloud backup disabled: %v", err)
 		return
 	}
 
@@ -170,158 +195,104 @@ func startPeriodicCloudBackups(ctx context.Context) {
 				log.Println("🚫 error exporting to zip:", err)
 				continue
 			}
-			switch config.BackupProvider {
-			case "s3":
-				S3Upload(ctx, zipFileName)
-			case "aws":
-				AwsUpload(ctx, zipFileName)
-			case "gcp":
-				GCPBucketUpload(ctx, zipFileName)
-			default:
-				log.Println("🚫 we only support AWS, GCP, and S3 at this time")
+			if err := uploadBackupToCloud(ctx, cloudProvider, zipFileName); err != nil {
+				log.Println("🚫 error uploading to cloud:", err)
+				continue
+			}
+			// delete the file
+			err = os.Remove(zipFileName)
+			if err != nil {
+				log.Println("🚫 error deleting local backup file:", err)
 			}
 		}
 	}
 }
 
-// Deprecated: Use S3Upload instead
-//
-//goland:noinspection GoUnhandledErrorResult
-func GCPBucketUpload(ctx context.Context, zipFileName string) {
-	if config.GcpConfig == nil {
-		log.Fatal("🚫 GCP specified as backup provider but no GCP config found. Check environment variables.")
+func getCloudProvider() (cloud.Provider, error) {
+	if config.BackupProvider == "none" || config.BackupProvider == "" {
+		return nil, fmt.Errorf("no backup provider set")
+	} else if config.BackupProvider != "s3" {
+		return nil, fmt.Errorf("backup provider %q not supported", config.BackupProvider)
 	}
 
-	bucket := config.GcpConfig.Bucket
-
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Close()
-
-	// open the zip db file.
-	f, err := os.Open(zipFileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	obj := client.Bucket(bucket).Object(zipFileName)
-
-	// Upload an object with storage.Writer.
-	wc := obj.NewWriter(ctx)
-	if _, err = io.Copy(wc, f); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := wc.Close(); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("✅ Successfully uploaded %q to %q\n", zipFileName, bucket)
-
-	// delete the file.
-	err = os.Remove(zipFileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-// Deprecated: Use S3Upload instead
-//
-//goland:noinspection GoUnhandledErrorResult
-func AwsUpload(ctx context.Context, zipFileName string) {
-	if config.AwsConfig == nil {
-		log.Fatal("🚫 AWS specified as backup provider but no AWS config found. Check environment variables.")
-	}
-
-	s3UploadShared(
-		ctx,
-		zipFileName,
-		config.AwsConfig.AccessKeyID,
-		config.AwsConfig.SecretAccessKey,
-		"s3.amazonaws.com",
-		config.AwsConfig.Region,
-		config.AwsConfig.Bucket,
-		true,
-	)
-}
-
-func S3Upload(ctx context.Context, zipFileName string) {
-	if config.S3Config == nil {
-		log.Fatal("🚫 S3 specified as backup provider but no S3 config found. Check environment variables.")
-	}
-
-	s3UploadShared(
-		ctx,
-		zipFileName,
+	cloudProvider, err := cloud.NewGenericS3Provider(
+		config.S3Config.Endpoint,
 		config.S3Config.AccessKeyID,
 		config.S3Config.SecretKey,
-		config.S3Config.Endpoint,
 		config.S3Config.Region,
-		config.S3Config.BucketName,
-		true,
 	)
+	if err != nil {
+		return nil, err
+	}
+	return cloudProvider, nil
 }
 
-func s3UploadShared(
-	ctx context.Context,
-	zipFileName string,
-	accessKey string,
-	secret string,
-	endpoint string,
-	region string,
-	bucketName string,
-	secure bool,
-) {
-	log.Println("🆙 uploading to S3 Bucket...")
+func downloadBackupFromCloud(ctx context.Context, downloader cloud.Downloader, fileName string) error {
+	log.Printf("📥 downloading %q from S3 Bucket...\n", fileName)
 
-	// Create MinIO client
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secret, ""),
-		Region: region,
-		Secure: secure,
-	})
+	reader, err := downloader.Download(ctx, config.S3Config.BucketName, fileName)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to download %s from %s: %w", fileName, config.S3Config.BucketName, err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Println("🚫 error closing cloud reader:", err)
+		}
+	}()
+
+	file, err := os.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to create local file %s: %w", fileName, err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Println("🚫 error closing local file:", err)
+		}
+	}()
+
+	_, err = io.Copy(file, reader)
+	if err != nil {
+		return fmt.Errorf("failed to save %s: %w", fileName, err)
 	}
 
-	// Upload the file to the S3 bucket
-	file, err := os.Open(zipFileName)
+	log.Printf("✅ Successfully downloaded %q from %q\n", fileName, config.S3Config.BucketName)
+
+	return nil
+}
+
+func uploadBackupToCloud(ctx context.Context, uploader cloud.Uploader, fileName string) error {
+	log.Println("🆙 uploading backup to S3 Bucket...")
+
+	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	defer func(file *os.File) {
+	defer func() {
 		if err := file.Close(); err != nil {
 			log.Println("🚫 error closing db zip file:", err)
 		}
-	}(file)
+	}()
 
 	fileInfo, err := file.Stat()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to load %s: %w", fileName, err)
 	}
 
-	_, err = client.PutObject(
-		ctx,
-		bucketName,
-		zipFileName,
-		file,
-		fileInfo.Size(),
-		minio.PutObjectOptions{
-			ContentType: "application/octet-stream",
-		},
-	)
+	err = uploader.Upload(ctx, config.S3Config.BucketName, fileName, file, fileInfo.Size(), getBackupContentType(fileName))
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to upload %s to %s: %w", fileName, config.S3Config.BucketName, err)
 	}
 
-	log.Printf("✅ Successfully uploaded %q to %q\n", zipFileName, bucketName)
+	log.Printf("✅ Successfully uploaded %q to %q\n", fileName, config.S3Config.BucketName)
 
-	// delete the file
-	err = os.Remove(zipFileName)
-	if err != nil {
-		log.Fatal(err)
+	return nil
+}
+
+func getBackupContentType(fileNane string) string {
+	if strings.HasSuffix(fileNane, ".zip") {
+		return "application/zip"
+	} else if strings.HasSuffix(fileNane, ".jsonl") {
+		return "application/jsonl"
 	}
+	return ""
 }
