@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM golang:bookworm AS builder
+FROM golang:trixie AS builder
 
 # Setup cache directories
 RUN go env -w GOCACHE=/go-cache
@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
     go build -ldflags="-w -s" -o haven .
 
 # Final stage: Run the application
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM gcr.io/distroless/base-debian13:nonroot
 
 # Copy the built application
 COPY --from=builder /app/haven .
