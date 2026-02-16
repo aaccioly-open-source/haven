@@ -9,7 +9,7 @@ Haven provides tools for backing up and restoring your relay data. This is essen
   from LMDB to BadgerDB or vice versa.
 * **Importing/Exporting Data**: Move data between Haven and other Nostr relays.
 
-> [!CAUTION]
+> [!IMPORTANT]
 > When importing data from external JSONL files, Haven will trust all events contained within the file and will not try
 > to validate or split the data. For example, it will allow notes from other people to be imported into your Outbox 
 > relay, bypassing [WoT](wot.md) checks and other safeguards. This is intentional to allow for maximum flexibility when 
@@ -20,7 +20,6 @@ Haven provides tools for backing up and restoring your relay data. This is essen
 > [`./haven import`](../README.md#8-run-the-import-optional) command instead.
 
 ---
-
 
 
 ## Manual Backup
