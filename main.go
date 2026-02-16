@@ -40,15 +40,6 @@ func main() {
 
 	pool = nostr.NewSimplePool(mainCtx, nostr.WithPenaltyBox())
 
-	wotModel := wot.NewSimpleInMemory(
-		pool,
-		config.OwnerNpubKey,
-		config.ImportSeedRelays,
-		config.WotDepth,
-		config.WotMinimumFollowers,
-		config.WotFetchTimeoutSeconds,
-	)
-
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "backup":
@@ -58,8 +49,6 @@ func main() {
 			runRestore(mainCtx)
 			return
 		case "import":
-			ensureImportRelays()
-			wot.Initialize(mainCtx, wotModel)
 			runImport(mainCtx)
 			return
 		case "help":
@@ -75,8 +64,19 @@ func main() {
 
 	flag.Parse()
 
+	log.Println("🚀 HAVEN", config.RelayVersion, "is booting up")
+	defer log.Println("🔌 HAVEN is shutting down")
 	ensureImportRelays()
+	wotModel := wot.NewSimpleInMemory(
+		pool,
+		config.OwnerNpubKey,
+		config.ImportSeedRelays,
+		config.WotDepth,
+		config.WotMinimumFollowers,
+		config.WotFetchTimeoutSeconds,
+	)
 	wot.Initialize(mainCtx, wotModel)
+	initRelays(mainCtx)
 
 	go func() {
 		go subscribeInboxAndChat(mainCtx)

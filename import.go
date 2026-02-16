@@ -51,6 +51,17 @@ func runImport(ctx context.Context) {
 		return
 	}
 
+	initDBs()
+	wotModel := wot.NewSimpleInMemory(
+		pool,
+		config.OwnerNpubKey,
+		config.ImportSeedRelays,
+		config.WotDepth,
+		config.WotMinimumFollowers,
+		config.WotFetchTimeoutSeconds,
+	)
+	wot.Initialize(ctx, wotModel)
+
 	log.Println("📦 importing notes")
 	importOwnerNotes(ctx)
 	importTaggedNotes(ctx)

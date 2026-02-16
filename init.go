@@ -80,7 +80,7 @@ func newLMDBBackend(path string) *lmdb.LMDBBackend {
 	}
 }
 
-func initRelays(ctx context.Context) {
+func initDBs() {
 	if err := privateDB.Init(); err != nil {
 		panic(err)
 	}
@@ -100,6 +100,10 @@ func initRelays(ctx context.Context) {
 	if err := blossomDB.Init(); err != nil {
 		panic(err)
 	}
+}
+
+func initRelays(ctx context.Context) {
+	initDBs()
 
 	initRelayLimits()
 

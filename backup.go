@@ -68,6 +68,8 @@ func runBackup(ctx context.Context) {
 		fileName = targetOutput
 	}
 
+	initDBs()
+
 	if strings.HasSuffix(fileName, ".jsonl") {
 		if targetRelay == "" {
 			log.Fatal("🚫 --relay parameter is required when exporting to .jsonl")
@@ -154,6 +156,8 @@ func runRestore(ctx context.Context) {
 			log.Fatal("🚫 ", err)
 		}
 	}
+
+	initDBs()
 
 	if strings.HasSuffix(fileName, ".jsonl") {
 		if targetRelay == "" {
