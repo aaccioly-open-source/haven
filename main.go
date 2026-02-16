@@ -24,8 +24,6 @@ var (
 )
 
 func main() {
-	defer log.Println("🔌 HAVEN is shutting down")
-
 	nostr.InfoLogger = log.New(io.Discard, "", 0)
 	slog.SetLogLoggerLevel(getLogLevelFromConfig())
 	green := "\033[32m"
@@ -34,9 +32,6 @@ func main() {
 
 	mainCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	log.Println("🚀 HAVEN", config.RelayVersion, "is booting up")
-	initRelays(mainCtx)
 
 	fs = afero.NewOsFs()
 	if err := fs.MkdirAll(config.BlossomPath, 0755); err != nil {
@@ -68,20 +63,12 @@ func main() {
 			runImport(mainCtx)
 			return
 		case "help":
-			fmt.Println("usage: haven [backup|restore|import|help]")
-			fmt.Println("  backup  - backup the database")
-			fmt.Println("  restore - restore the database")
-			fmt.Println("  import  - import notes from seed relays")
-			fmt.Println("  help    - show this help message")
+			printHelp()
 			return
 		}
 
 		if os.Args[1] == "-h" || os.Args[1] == "--help" {
-			fmt.Println("usage: haven [backup|restore|import|help]")
-			fmt.Println("  backup  - backup the database")
-			fmt.Println("  restore - restore the database")
-			fmt.Println("  import  - import notes from seed relays")
-			fmt.Println("  help    - show this help message")
+			printHelp()
 			return
 		}
 	}
@@ -106,6 +93,22 @@ func main() {
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal("🚫 error starting server:", err)
 	}
+}
+
+func printHelp() {
+	fmt.Println("haven is a personal nostr relay.")
+	fmt.Println()
+	fmt.Println("usage: haven [command]")
+	fmt.Println()
+	fmt.Println("commands:")
+	fmt.Println("  backup  - backup the database")
+	fmt.Println("  restore - restore the database")
+	fmt.Println("  import  - import notes from seed relays")
+	fmt.Println("  help    - show this help message")
+	fmt.Println()
+	fmt.Println("if no command is provided, the relay starts by default.")
+	fmt.Println()
+	fmt.Println("run 'haven [command] --help' for more information on a command.")
 }
 
 func dynamicRelayHandler(w http.ResponseWriter, r *http.Request) {
