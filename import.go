@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/fiatjaf/eventstore"
 	"github.com/nbd-wtf/go-nostr"
 
-	"github.com/bitvora/haven/wot"
+	"github.com/bitvora/haven/pkg/wot"
 )
 
 const layout = "2006-01-02"
@@ -51,6 +53,17 @@ func runImport(ctx context.Context) {
 		return
 	}
 
+	initDBs()
+	wotModel := wot.NewSimpleInMemory(
+		pool,
+		config.WhitelistedPubKeys,
+		config.ImportSeedRelays,
+		config.WotDepth,
+		config.WotMinimumFollowers,
+		config.WotFetchTimeoutSeconds,
+	)
+	wot.Initialize(ctx, wotModel)
+
 	log.Println("📦 importing notes")
 	importOwnerNotes(ctx)
 	importTaggedNotes(ctx)
@@ -73,7 +86,7 @@ func importOwnerNotes(ctx context.Context) {
 		endTimestamp := nostr.Timestamp(endTime.Unix())
 
 		filter := nostr.Filter{
-			Authors: []string{config.OwnerNpubKey},
+			Authors: slices.Collect(maps.Keys(config.WhitelistedPubKeys)),
 			Since:   &startTimestamp,
 			Until:   &endTimestamp,
 		}
@@ -139,7 +152,7 @@ func importTaggedNotes(ctx context.Context) {
 	wdbChat := eventstore.RelayWrapper{Store: chatDB}
 	filter := nostr.Filter{
 		Tags: nostr.TagMap{
-			"p": {config.OwnerNpubKey},
+			"p": slices.Collect(maps.Keys(config.WhitelistedPubKeys)),
 		},
 	}
 
@@ -152,14 +165,14 @@ func importTaggedNotes(ctx context.Context) {
 				break // Stop the loop on timeout
 			}
 
-			if !wot.GetInstance().Has(ctx, ev.Event.PubKey) && ev.Kind != nostr.KindGiftWrap {
+			if !wot.GetInstance().Has(ctx, ev.PubKey) && ev.Kind != nostr.KindGiftWrap {
 				continue
 			}
 			for tag := range ev.Tags.FindAll("p") {
 				if len(tag) < 2 {
 					continue
 				}
-				if tag[1] == config.OwnerNpubKey {
+				if _, ok := config.WhitelistedPubKeys[tag[1]]; ok {
 					dbToWrite := wdbInbox
 					if ev.Kind == nostr.KindGiftWrap {
 						dbToWrite = wdbChat
@@ -190,7 +203,7 @@ func subscribeInboxAndChat(ctx context.Context) {
 	startTime := nostr.Timestamp(time.Now().Add(-time.Minute * 5).Unix())
 	filter := nostr.Filter{
 		Tags: nostr.TagMap{
-			"p": {config.OwnerNpubKey},
+			"p": slices.Collect(maps.Keys(config.WhitelistedPubKeys)),
 		},
 		Since: &startTime,
 	}
@@ -198,36 +211,36 @@ func subscribeInboxAndChat(ctx context.Context) {
 	log.Println("📢 subscribing to inbox")
 
 	for ev := range pool.SubscribeMany(ctx, config.ImportSeedRelays, filter) {
-		if !wot.GetInstance().Has(ctx, ev.Event.PubKey) && ev.Event.Kind != nostr.KindGiftWrap {
+		if !wot.GetInstance().Has(ctx, ev.PubKey) && ev.Kind != nostr.KindGiftWrap {
 			continue
 		}
-		for tag := range ev.Event.Tags.FindAll("p") {
+		for tag := range ev.Tags.FindAll("p") {
 			if len(tag) < 2 {
 				continue
 			}
-			if tag[1] == config.OwnerNpubKey {
+			if _, ok := config.WhitelistedPubKeys[tag[1]]; ok {
 				dbToPublish := wdbInbox
-				if ev.Event.Kind == nostr.KindGiftWrap {
+				if ev.Kind == nostr.KindGiftWrap {
 					dbToPublish = wdbChat
 				}
 
-				slog.Debug("ℹ️ importing event", "kind", ev.Kind, "id", ev.Event.ID, "relay", ev.Relay.URL)
+				slog.Debug("ℹ️ importing event", "kind", ev.Kind, "id", ev.ID, "relay", ev.Relay.URL)
 
 				if isDuplicate(ctx, dbToPublish, ev.Event) {
-					slog.Debug("ℹ️ skipping duplicate event", "id", ev.Event.ID)
+					slog.Debug("ℹ️ skipping duplicate event", "id", ev.ID)
 					break // Avoid re-importing duplicates
 				}
 
 				if err := dbToPublish.Publish(ctx, *ev.Event); err != nil {
-					log.Println("🚫 error importing tagged note", ev.Event.ID, ":", "from relay", ev.Relay.URL, ":", err)
+					log.Println("🚫 error importing tagged note", ev.ID, ":", "from relay", ev.Relay.URL, ":", err)
 					break
 				}
 
-				switch ev.Event.Kind {
+				switch ev.Kind {
 				case nostr.KindTextNote:
 					log.Println("📰 new note in your inbox")
 				case nostr.KindReaction:
-					log.Println(ev.Event.Content, "new reaction in your inbox")
+					log.Println(ev.Content, "new reaction in your inbox")
 				case nostr.KindZap:
 					log.Println("⚡️ new zap in your inbox")
 				case nostr.KindEncryptedDirectMessage:
@@ -239,7 +252,7 @@ func subscribeInboxAndChat(ctx context.Context) {
 				case nostr.KindFollowList:
 					// do nothing
 				default:
-					log.Println("📦 new event kind", ev.Event.Kind, "event in your inbox")
+					log.Println("📦 new event kind", ev.Kind, "event in your inbox")
 				}
 			}
 		}

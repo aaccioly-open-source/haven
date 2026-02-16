@@ -14,7 +14,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/spf13/afero"
 
-	"github.com/bitvora/haven/wot"
+	"github.com/bitvora/haven/pkg/wot"
 )
 
 var (
@@ -24,14 +24,11 @@ var (
 )
 
 func main() {
-	defer log.Println("🔌 HAVEN is shutting down")
-
 	nostr.InfoLogger = log.New(io.Discard, "", 0)
 	slog.SetLogLoggerLevel(getLogLevelFromConfig())
 	green := "\033[32m"
 	reset := "\033[0m"
 	fmt.Println(green + art + reset)
-	log.Println("🚀 HAVEN", config.RelayVersion, "is booting up")
 
 	mainCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -42,20 +39,6 @@ func main() {
 	}
 
 	pool = nostr.NewSimplePool(mainCtx, nostr.WithPenaltyBox())
-
-	ensureImportRelays()
-
-	wotModel := wot.NewSimpleInMemory(
-		pool,
-		config.OwnerNpubKey,
-		config.ImportSeedRelays,
-		config.WotDepth,
-		config.WotMinimumFollowers,
-		config.WotFetchTimeoutSeconds,
-	)
-	wot.Initialize(mainCtx, wotModel)
-
-	initRelays(mainCtx)
 
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -69,25 +52,32 @@ func main() {
 			runImport(mainCtx)
 			return
 		case "help":
-			fmt.Println("usage: haven [backup|restore|import|help]")
-			fmt.Println("  backup  - backup the database")
-			fmt.Println("  restore - restore the database")
-			fmt.Println("  import  - import notes from seed relays")
-			fmt.Println("  help    - show this help message")
+			printHelp()
 			return
 		}
 
 		if os.Args[1] == "-h" || os.Args[1] == "--help" {
-			fmt.Println("usage: haven [backup|restore|import|help]")
-			fmt.Println("  backup  - backup the database")
-			fmt.Println("  restore - restore the database")
-			fmt.Println("  import  - import notes from seed relays")
-			fmt.Println("  help    - show this help message")
+			printHelp()
 			return
 		}
 	}
 
 	flag.Parse()
+
+	log.Println("🚀 HAVEN", config.RelayVersion, "is booting up")
+	defer log.Println("🔌 HAVEN is shutting down")
+	log.Printf("👥 Number of whitelisted pubkeys: %v\n", len(config.WhitelistedPubKeys))
+	ensureImportRelays()
+	wotModel := wot.NewSimpleInMemory(
+		pool,
+		config.WhitelistedPubKeys,
+		config.ImportSeedRelays,
+		config.WotDepth,
+		config.WotMinimumFollowers,
+		config.WotFetchTimeoutSeconds,
+	)
+	wot.Initialize(mainCtx, wotModel)
+	initRelays(mainCtx)
 
 	go func() {
 		go subscribeInboxAndChat(mainCtx)
@@ -104,6 +94,22 @@ func main() {
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal("🚫 error starting server:", err)
 	}
+}
+
+func printHelp() {
+	fmt.Println("haven is a personal nostr relay.")
+	fmt.Println()
+	fmt.Println("usage: haven [command]")
+	fmt.Println()
+	fmt.Println("commands:")
+	fmt.Println("  backup  - backup the database")
+	fmt.Println("  restore - restore the database")
+	fmt.Println("  import  - import notes from seed relays")
+	fmt.Println("  help    - show this help message")
+	fmt.Println()
+	fmt.Println("if no command is provided, the relay starts by default.")
+	fmt.Println()
+	fmt.Println("run 'haven [command] --help' for more information on a command.")
 }
 
 func dynamicRelayHandler(w http.ResponseWriter, r *http.Request) {

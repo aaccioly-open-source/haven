@@ -1,5 +1,11 @@
 # HAVEN
 
+[![Go version](https://img.shields.io/github/go-mod/go-version/bitvora/haven?logo=go)](./go.mod#L3)
+[![GitHub Release](https://img.shields.io/github/v/release/bitvora/haven?link=https%3A%2F%2Fgithub.com%2Fbitvora%2Fhaven%2Freleases%2Flatest)](https://github.com/bitvora/haven/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+[![CI](https://github.com/bitvora/haven/actions/workflows/lint.yml/badge.svg)](https://github.com/bitvora/haven/actions/workflows/lint.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitvora/haven)](https://goreportcard.com/report/github.com/bitvora/haven)
+
 HAVEN (High Availability Vault for Events on Nostr) is the most sovereign personal relay for the Nostr protocol, for storing and backing up sensitive notes like eCash, private chats and drafts. It is a relay that is not so dumb, with features like web of trust, inbox relay, cloud backups, blastr and the ability to import old notes. It even includes it's own blossom media server!
 
 ## Four Relays in One + Blossom Media Server
@@ -80,7 +86,19 @@ cp relays_blastr.example.json relays_blastr.json
 
 The JSON should contain an array of relay URLs, which default to wss:// if you don't explicitly specify the protocol.
 
-### 4. Run on System Startup
+### 4. Create the Whitelisted npubs JSON file (optional)
+
+If you want to whitelist additional pubkeys to have the same permissions as the relay owner (private relay access, 
+outbox publishing, writing to blossom, etc.), create a `whitelisted_npubs.json` file:
+
+```bash
+cp whitelisted_npubs.example.json whitelisted_npubs.json
+```
+
+> [!NOTE]
+> The relay owner pubkey is automatically added to the whitelist, there is no need to repeat it in the whitelist file.
+
+### 5. Run on System Startup
 
 ### Linux - Create a Systemd Service
 To have the relay run as a service, create a systemd unit file. Make sure to limit the memory usage to less than your system's total memory to prevent the relay from crashing the system.

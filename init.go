@@ -16,7 +16,7 @@ import (
 	"github.com/fiatjaf/khatru/policies"
 	"github.com/nbd-wtf/go-nostr"
 
-	"github.com/bitvora/haven/wot"
+	"github.com/bitvora/haven/pkg/wot"
 )
 
 var (
@@ -40,6 +40,14 @@ var (
 )
 
 var blossomDB = newDBBackend("db/blossom")
+
+var dbs = map[string]DBBackend{
+	"blossom": blossomDB,
+	"chat":    chatDB,
+	"inbox":   inboxDB,
+	"outbox":  outboxDB,
+	"private": privateDB,
+}
 
 type DBBackend interface {
 	Init() error
@@ -72,7 +80,7 @@ func newLMDBBackend(path string) *lmdb.LMDBBackend {
 	}
 }
 
-func initRelays(ctx context.Context) {
+func initDBs() {
 	if err := privateDB.Init(); err != nil {
 		panic(err)
 	}
@@ -92,6 +100,10 @@ func initRelays(ctx context.Context) {
 	if err := blossomDB.Init(); err != nil {
 		panic(err)
 	}
+}
+
+func initRelays(ctx context.Context) {
+	initDBs()
 
 	initRelayLimits()
 
@@ -140,7 +152,7 @@ func initRelays(ctx context.Context) {
 
 	privateRelay.RejectFilter = append(privateRelay.RejectFilter, func(ctx context.Context, filter nostr.Filter) (bool, string) {
 		authenticatedUser := khatru.GetAuthed(ctx)
-		if authenticatedUser == config.OwnerNpubKey {
+		if _, ok := config.WhitelistedPubKeys[authenticatedUser]; ok {
 			return false, ""
 		}
 
@@ -150,7 +162,7 @@ func initRelays(ctx context.Context) {
 	privateRelay.RejectEvent = append(privateRelay.RejectEvent, func(ctx context.Context, event *nostr.Event) (bool, string) {
 		authenticatedUser := khatru.GetAuthed(ctx)
 
-		if authenticatedUser == config.OwnerNpubKey {
+		if _, ok := config.WhitelistedPubKeys[authenticatedUser]; ok {
 			return false, ""
 		}
 
@@ -225,7 +237,7 @@ func initRelays(ctx context.Context) {
 		authenticatedUser := khatru.GetAuthed(ctx)
 
 		if !wot.GetInstance().Has(ctx, authenticatedUser) {
-			return true, "you must be in the web of trust to chat with the relay owner"
+			return true, "you must be in the web of trust to write to this relay"
 		}
 
 		return false, ""
@@ -335,10 +347,10 @@ func initRelays(ctx context.Context) {
 	outboxRelay.ReplaceEvent = append(outboxRelay.ReplaceEvent, outboxDB.ReplaceEvent)
 
 	outboxRelay.RejectEvent = append(outboxRelay.RejectEvent, func(ctx context.Context, event *nostr.Event) (bool, string) {
-		if event.PubKey == config.OwnerNpubKey {
+		if _, ok := config.WhitelistedPubKeys[event.PubKey]; ok {
 			return false, ""
 		}
-		return true, "only notes signed by the owner of this relay are allowed"
+		return true, "only notes signed by npubs whilested in this relay are allowed"
 	})
 
 	mux = outboxRelay.Router()
@@ -385,11 +397,11 @@ func initRelays(ctx context.Context) {
 		return fs.Remove(config.BlossomPath + sha256)
 	})
 	bl.RejectUpload = append(bl.RejectUpload, func(ctx context.Context, event *nostr.Event, size int, ext string) (bool, string, int) {
-		if event.PubKey == config.OwnerNpubKey {
+		if _, ok := config.WhitelistedPubKeys[event.PubKey]; ok {
 			return false, ext, size
 		}
 
-		return true, "only notes signed by the owner of this relay are allowed", 403
+		return true, "only media signed by whitelisted pubkeys are allowed", 403
 	})
 	migrateBlossomMetadata(ctx, bl)
 
@@ -445,7 +457,7 @@ func initRelays(ctx context.Context) {
 			return false, ""
 		}
 
-		return true, "you can only post notes if you've tagged the owner of this relay"
+		return true, "you can only post notes if you've tagged a whitelisted pubkey in this relay"
 	})
 
 	mux = inboxRelay.Router()

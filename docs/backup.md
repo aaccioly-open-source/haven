@@ -1,6 +1,28 @@
 # Backup and Restore
 
-## Manual Backup and Restore
+### Corrected version
+
+Haven provides tools for backing up and restoring your relay data. This is essential for several use cases:
+
+* **Disaster Recovery**: Protect your data against hardware failure or accidental deletion.
+* **Switching Databases**: Easily move your data when migrating to a new server or database provider. Move your notes
+  from LMDB to BadgerDB or vice versa.
+* **Importing/Exporting Data**: Move data between Haven and other Nostr relays.
+
+> [!IMPORTANT]
+> When importing data from external JSONL files, Haven will trust all events contained within the file and will not try
+> to validate or split the data. For example, it will allow notes from other people to be imported into your Outbox 
+> relay, bypassing [WoT](wot.md) checks and other safeguards. This is intentional to allow for maximum flexibility when 
+> importing  data, but it also means that you should be careful when importing data from untrusted sources.
+
+> [!TIP]
+> For simple imports from external relays, you may prefer to use the
+> [`./haven import`](../README.md#8-run-the-import-optional) command instead.
+
+---
+
+
+## Manual Backup
 
 If you want to backup all relay data to a JSONL zip file, run the following command:
 
@@ -20,11 +42,25 @@ If you want to upload the backup to your cloud provider after creation, use the 
 ./haven backup --to-cloud
 ```
 
+You can also specify a filename with `--to-cloud`:
+
+```bash
+./haven backup --to-cloud mybackup.zip
+```
+
 To backup a specific relay to a JSONL file:
 
 ```bash
 ./haven backup --relay outbox outbox.jsonl
 ```
+
+And you can also upload a specific relay backup to the cloud:
+
+```bash
+./haven backup --relay outbox --to-cloud outbox.jsonl
+```
+
+## Manual Restore
 
 To restore data from a `haven_backup.zip` file, run:
 
@@ -44,10 +80,22 @@ To restore from the cloud using the default name:
 ./haven restore --from-cloud
 ```
 
+You can also specify a filename to restore from the cloud:
+
+```bash
+./haven restore --from-cloud mybackup.zip
+```
+
 To restore a specific relay from a JSONL file:
 
 ```bash
 ./haven restore --relay outbox outbox.jsonl
+```
+
+And to restore a specific relay from a JSONL file in the cloud:
+
+```bash
+./haven restore --relay outbox --from-cloud outbox.jsonl
 ```
 
 ## Periodic Cloud Backups
