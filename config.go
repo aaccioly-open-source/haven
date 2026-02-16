@@ -72,8 +72,8 @@ func loadConfig() Config {
 	return Config{
 		OwnerNpub:                            getEnv("OWNER_NPUB"),
 		OwnerPubKey:                          nPubToPubkey(getEnv("OWNER_NPUB")),
-		DBEngine:                             getEnvString("DB_ENGINE", "lmdb"),
 		WhitelistedPubKeys:                   getNpubsFromFile(getEnvString("WHITELISTED_NPUBS_FILE", "")),
+		DBEngine:                             getEnvString("DB_ENGINE", "lmdb"),
 		LmdbMapSize:                          getEnvInt64("LMDB_MAPSIZE", 0),
 		BlossomPath:                          getEnvString("BLOSSOM_PATH", "blossom"),
 		RelayURL:                             getEnv("RELAY_URL"),
