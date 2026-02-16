@@ -41,7 +41,7 @@ type Config struct {
 	ChatRelayNpub                        string              `json:"chat_relay_npub"`
 	ChatRelayDescription                 string              `json:"chat_relay_description"`
 	ChatRelayIcon                        string              `json:"chat_relay_icon"`
-	ChatRelayAllowKind4                  bool          `json:"chat_relay_allow_kind_4"`
+	ChatRelayAllowKind4                  bool                `json:"chat_relay_allow_kind_4"`
 	OutboxRelayName                      string              `json:"outbox_relay_name"`
 	OutboxRelayNpub                      string              `json:"outbox_relay_npub"`
 	OutboxRelayDescription               string              `json:"outbox_relay_description"`
@@ -73,6 +73,7 @@ func loadConfig() Config {
 	return Config{
 		OwnerNpub:                            getEnv("OWNER_NPUB"),
 		OwnerPubKey:                          nPubToPubkey(getEnv("OWNER_NPUB")),
+		WhitelistedPubKeys:                   getNpubsFromFile(getEnvString("WHITELISTED_NPUBS_FILE", "")),
 		DBEngine:                             getEnvString("DB_ENGINE", "lmdb"),
 		LmdbMapSize:                          getEnvInt64("LMDB_MAPSIZE", 0),
 		BlossomPath:                          getEnvString("BLOSSOM_PATH", "blossom"),
