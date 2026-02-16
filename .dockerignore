@@ -14,6 +14,8 @@ relays_blastr.json
 relays_blastr.example.json
 relays_import.json
 relays_import.example.json
+whitelisted_npubs.json
+whitelisted_npubs.example.json
 
 # Directories
 .idea
