@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/fiatjaf/eventstore"
@@ -54,7 +56,7 @@ func runImport(ctx context.Context) {
 	initDBs()
 	wotModel := wot.NewSimpleInMemory(
 		pool,
-		config.OwnerNpubKey,
+		config.WhitelistedPubKeys,
 		config.ImportSeedRelays,
 		config.WotDepth,
 		config.WotMinimumFollowers,
@@ -84,7 +86,7 @@ func importOwnerNotes(ctx context.Context) {
 		endTimestamp := nostr.Timestamp(endTime.Unix())
 
 		filter := nostr.Filter{
-			Authors: []string{config.OwnerNpubKey},
+			Authors: slices.Collect(maps.Keys(config.WhitelistedPubKeys)),
 			Since:   &startTimestamp,
 			Until:   &endTimestamp,
 		}
@@ -150,7 +152,7 @@ func importTaggedNotes(ctx context.Context) {
 	wdbChat := eventstore.RelayWrapper{Store: chatDB}
 	filter := nostr.Filter{
 		Tags: nostr.TagMap{
-			"p": {config.OwnerNpubKey},
+			"p": slices.Collect(maps.Keys(config.WhitelistedPubKeys)),
 		},
 	}
 
@@ -170,7 +172,7 @@ func importTaggedNotes(ctx context.Context) {
 				if len(tag) < 2 {
 					continue
 				}
-				if tag[1] == config.OwnerNpubKey {
+				if _, ok := config.WhitelistedPubKeys[tag[1]]; ok {
 					dbToWrite := wdbInbox
 					if ev.Kind == nostr.KindGiftWrap {
 						dbToWrite = wdbChat
@@ -201,7 +203,7 @@ func subscribeInboxAndChat(ctx context.Context) {
 	startTime := nostr.Timestamp(time.Now().Add(-time.Minute * 5).Unix())
 	filter := nostr.Filter{
 		Tags: nostr.TagMap{
-			"p": {config.OwnerNpubKey},
+			"p": slices.Collect(maps.Keys(config.WhitelistedPubKeys)),
 		},
 		Since: &startTime,
 	}
@@ -216,7 +218,7 @@ func subscribeInboxAndChat(ctx context.Context) {
 			if len(tag) < 2 {
 				continue
 			}
-			if tag[1] == config.OwnerNpubKey {
+			if _, ok := config.WhitelistedPubKeys[tag[1]]; ok {
 				dbToPublish := wdbInbox
 				if ev.Kind == nostr.KindGiftWrap {
 					dbToPublish = wdbChat

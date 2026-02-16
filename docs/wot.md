@@ -87,6 +87,10 @@ requires heavier and potentially slower computation to calculate the WoT graph.
 Most users should start with Level 3 and adjust the `WOT_MINIMUM_FOLLOWERS` to make the WoT more or less restrictive 
 based on their preferences and the size of their follow graph.
 
+> [!INFO]
+> When multiple pubkeys are whitelisted their connections are merged when calculating the WoT graph. Meaning that 
+> all trusted connections will be allowed to write to the Inbox and Chat relays tagging any of the whitelisted pubkeys.
+
 
 ### Other Settings
 

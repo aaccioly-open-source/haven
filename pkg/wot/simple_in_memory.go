@@ -20,26 +20,26 @@ type SimpleInMemory struct {
 	pubkeys atomic.Pointer[map[string]bool]
 
 	// Dependencies for Refresh
-	Pool            *nostr.SimplePool
-	OwnerPubkey     string
-	SeedRelays      []string
-	WotDepth        int
-	MinFollowers    int
-	WotFetchTimeout int
+	Pool               *nostr.SimplePool
+	WhitelistedPubKeys map[string]struct{}
+	SeedRelays         []string
+	WotDepth           int
+	MinFollowers       int
+	WotFetchTimeout    int
 }
 
-func NewSimpleInMemory(pool *nostr.SimplePool, ownerPubkey string, seedRelays []string, wotDepth int, minFollowers int, wotFetchTimeout int) *SimpleInMemory {
+func NewSimpleInMemory(pool *nostr.SimplePool, whitelistedPubKeys map[string]struct{}, seedRelays []string, wotDepth int, minFollowers int, wotFetchTimeout int) *SimpleInMemory {
 	return &SimpleInMemory{
-		Pool:            pool,
-		OwnerPubkey:     ownerPubkey,
-		SeedRelays:      seedRelays,
-		WotDepth:        wotDepth,
-		MinFollowers:    minFollowers,
-		WotFetchTimeout: wotFetchTimeout,
+		Pool:               pool,
+		WhitelistedPubKeys: whitelistedPubKeys,
+		SeedRelays:         seedRelays,
+		WotDepth:           wotDepth,
+		MinFollowers:       minFollowers,
+		WotFetchTimeout:    wotFetchTimeout,
 	}
 }
 
-func (wt *SimpleInMemory) Has(_ context.Context, pubkey string) bool {
+func (wt *SimpleInMemory) Has(_ context.Context, pubKey string) bool {
 	if wt.WotDepth == 0 {
 		return true
 	}
@@ -47,7 +47,7 @@ func (wt *SimpleInMemory) Has(_ context.Context, pubkey string) bool {
 	if m == nil {
 		return false
 	}
-	return (*m)[pubkey]
+	return (*m)[pubKey]
 }
 
 func (wt *SimpleInMemory) Init(ctx context.Context) {
@@ -82,7 +82,9 @@ func (wt *SimpleInMemory) Refresh(ctx context.Context) {
 	newWot := make(map[string]bool)
 
 	if wt.WotDepth >= 1 {
-		newWot[wt.OwnerPubkey] = true
+		for pubkey := range wt.WhitelistedPubKeys {
+			newWot[pubkey] = true
+		}
 	}
 
 	if wt.WotDepth == 1 {
@@ -95,7 +97,7 @@ func (wt *SimpleInMemory) Refresh(ctx context.Context) {
 	defer cancel()
 
 	filter := nostr.Filter{
-		Authors: []string{wt.OwnerPubkey},
+		Authors: slices.Collect(maps.Keys(wt.WhitelistedPubKeys)),
 		Kinds:   []int{nostr.KindFollowList},
 	}
 
@@ -105,13 +107,10 @@ func (wt *SimpleInMemory) Refresh(ctx context.Context) {
 	for ev := range latestEventByKindAndPubkey(timeoutCtx, events, &eventsAnalysed) {
 		for contact := range ev.Tags.FindAll("p") {
 			if len(contact) > 1 {
-				if wt.WotDepth == 2 {
-					newWot[contact[1]] = true
-				} else {
-					followers, _ := pubkeyFollowers.LoadOrStore(contact[1], &atomic.Int64{})
-					followers.Add(1)
-					oneHopNetwork[contact[1]] = true
-				}
+				followers, _ := pubkeyFollowers.LoadOrStore(contact[1], &atomic.Int64{})
+				followers.Add(1)
+				oneHopNetwork[contact[1]] = true
+				newWot[contact[1]] = true
 			}
 		}
 	}

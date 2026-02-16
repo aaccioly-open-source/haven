@@ -1,10 +1,11 @@
-.env
-relays_import.json
-relays_blastr.json
-haven
 .DS_Store
+.env
 .idea/
+blossom/
 db.zip
 db/
 dist/
-blossom/
+haven
+relays_blastr.json
+relays_import.json
+whitelisted_npubs.json

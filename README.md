@@ -86,7 +86,19 @@ cp relays_blastr.example.json relays_blastr.json
 
 The JSON should contain an array of relay URLs, which default to wss:// if you don't explicitly specify the protocol.
 
-### 4. Run on System Startup
+### 4. Create the Whitelisted npubs JSON file (optional)
+
+If you want to whitelist additional pubkeys to have the same permissions as the relay owner (private relay access, 
+outbox publishing, writing to blossom, etc.), create a `whitelisted_npubs.json` file:
+
+```bash
+cp whitelisted_npubs.example.json whitelisted_npubs.json
+```
+
+> [!NOTE]
+> The relay owner pubkey is automatically added to the whitelist, there is no need to repeat it in the whitelist file.
+
+### 5. Run on System Startup
 
 ### Linux - Create a Systemd Service
 To have the relay run as a service, create a systemd unit file. Make sure to limit the memory usage to less than your system's total memory to prevent the relay from crashing the system.
