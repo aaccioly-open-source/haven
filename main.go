@@ -31,10 +31,12 @@ func main() {
 	green := "\033[32m"
 	reset := "\033[0m"
 	fmt.Println(green + art + reset)
-	log.Println("🚀 HAVEN", config.RelayVersion, "is booting up")
 
 	mainCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	log.Println("🚀 HAVEN", config.RelayVersion, "is booting up")
+	initRelays(mainCtx)
 
 	fs = afero.NewOsFs()
 	if err := fs.MkdirAll(config.BlossomPath, 0755); err != nil {
@@ -42,8 +44,6 @@ func main() {
 	}
 
 	pool = nostr.NewSimplePool(mainCtx, nostr.WithPenaltyBox())
-
-	ensureImportRelays()
 
 	wotModel := wot.NewSimpleInMemory(
 		pool,
@@ -53,9 +53,6 @@ func main() {
 		config.WotMinimumFollowers,
 		config.WotFetchTimeoutSeconds,
 	)
-	wot.Initialize(mainCtx, wotModel)
-
-	initRelays(mainCtx)
 
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -66,6 +63,8 @@ func main() {
 			runRestore(mainCtx)
 			return
 		case "import":
+			ensureImportRelays()
+			wot.Initialize(mainCtx, wotModel)
 			runImport(mainCtx)
 			return
 		case "help":
@@ -88,6 +87,9 @@ func main() {
 	}
 
 	flag.Parse()
+
+	ensureImportRelays()
+	wot.Initialize(mainCtx, wotModel)
 
 	go func() {
 		go subscribeInboxAndChat(mainCtx)
