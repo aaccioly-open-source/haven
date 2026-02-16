@@ -41,6 +41,14 @@ var (
 
 var blossomDB = newDBBackend("db/blossom")
 
+var dbs = map[string]DBBackend{
+	"blossom": blossomDB,
+	"chat":    chatDB,
+	"inbox":   inboxDB,
+	"outbox":  outboxDB,
+	"private": privateDB,
+}
+
 type DBBackend interface {
 	Init() error
 	Close()

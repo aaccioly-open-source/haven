@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/fiatjaf/eventstore"
@@ -38,22 +39,23 @@ func exportToZip(ctx context.Context, zipFileName string) error {
 	z := &zipWriter{f: f, w: zw}
 	defer z.close()
 
-	for _, entry := range getDBs() {
-		slog.Info("📦 exporting db to file", "file", entry.name)
+	for name, db := range dbs {
+		fileName := name + ".jsonl"
+		slog.Info("📦 exporting db to fileName", "fileName", fileName)
 
 		header := &zip.FileHeader{
-			Name:     entry.name,
+			Name:     fileName,
 			Method:   zip.Deflate,
 			Modified: time.Now(),
 		}
 
 		writer, err := zw.CreateHeader(header)
 		if err != nil {
-			return fmt.Errorf("error creating zip entry %s: %w", entry.name, err)
+			return fmt.Errorf("error creating zip entry %s: %w", fileName, err)
 		}
 
-		if err := exportDB(ctx, entry.db, writer); err != nil {
-			return fmt.Errorf("error exporting %s: %w", entry.name, err)
+		if err := exportDB(ctx, db, writer); err != nil {
+			return fmt.Errorf("error exporting %s: %w", fileName, err)
 		}
 	}
 
@@ -63,7 +65,7 @@ func exportToZip(ctx context.Context, zipFileName string) error {
 
 func exportToJSONL(ctx context.Context, relayName, jsonlFileName string) error {
 	slog.Info("🛫 starting export", "relay", relayName, "file", jsonlFileName)
-	db, ok := getDBByName(relayName)
+	db, ok := dbs[relayName]
 	if !ok {
 		return fmt.Errorf("unknown relay: %s", relayName)
 	}
@@ -99,12 +101,15 @@ func importFromZip(ctx context.Context, zipFileName string) error {
 		}
 	}()
 
-	dbs := getDBMap()
-
 	for _, file := range zipFile.File {
-		db, ok := dbs[file.Name]
-		if !ok {
+		if !strings.HasSuffix(file.Name, ".jsonl") {
 			slog.Warn("⏭️ skipping unknown file in zip", "file", file.Name)
+			continue
+		}
+		relayName := strings.TrimSuffix(file.Name, ".jsonl")
+		db, ok := dbs[relayName]
+		if !ok {
+			slog.Warn("⏭️ skipping file for unknown relay type", "file", file.Name)
 			continue
 		}
 
@@ -138,7 +143,7 @@ func importEntry(ctx context.Context, db DBBackend, file *zip.File) error {
 
 func importFromJSONL(ctx context.Context, relayName, jsonlFileName string) error {
 	slog.Info("🛬 starting import", "relay", relayName, "file", jsonlFileName)
-	db, ok := getDBByName(relayName)
+	db, ok := dbs[relayName]
 	if !ok {
 		return fmt.Errorf("unknown relay: %s", relayName)
 	}
@@ -159,38 +164,6 @@ func importFromJSONL(ctx context.Context, relayName, jsonlFileName string) error
 
 	slog.Info("✅ import complete", "file", jsonlFileName)
 	return nil
-}
-
-type dbEntry struct {
-	name string
-	db   DBBackend
-}
-
-func getDBs() []dbEntry {
-	return []dbEntry{
-		{"private.jsonl", privateDB},
-		{"chat.jsonl", chatDB},
-		{"outbox.jsonl", outboxDB},
-		{"inbox.jsonl", inboxDB},
-		{"blossom.jsonl", blossomDB},
-	}
-}
-
-func getDBMap() map[string]DBBackend {
-	m := make(map[string]DBBackend)
-	for _, entry := range getDBs() {
-		m[entry.name] = entry.db
-	}
-	return m
-}
-
-func getDBByName(relay string) (DBBackend, bool) {
-	name := relay
-	if len(name) < 6 || name[len(name)-6:] != ".jsonl" {
-		name += ".jsonl"
-	}
-	db, ok := getDBMap()[name]
-	return db, ok
 }
 
 type zipWriter struct {
