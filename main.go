@@ -14,7 +14,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/spf13/afero"
 
-	"github.com/bitvora/haven/wot"
+	"github.com/bitvora/haven/pkg/wot"
 )
 
 var (
