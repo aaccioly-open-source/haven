@@ -100,11 +100,11 @@ changelog:
       - '^Reintroduce Docker$'
 
   groups:
-    - title: "Bug fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
-      order: 0
     - title: Features
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
     - title: "Code Refactoring"
       regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
