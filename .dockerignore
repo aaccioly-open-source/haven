@@ -5,6 +5,8 @@
 .gitignore
 .goreleaser.yaml
 
+blacklisted_npubs.json
+blacklisted_npubs.example.json
 compose.yml
 Dockerfile
 haven
