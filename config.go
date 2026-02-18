@@ -24,7 +24,6 @@ type S3Config struct {
 type Config struct {
 	OwnerNpub                            string              `json:"owner_npub"`
 	OwnerPubKey                          string              `json:"owner_pubkey"`
-	WhitelistedPubKeys                   map[string]struct{} `json:"whitelisted_pubkeys"`
 	DBEngine                             string              `json:"db_engine"`
 	LmdbMapSize                          int64               `json:"lmdb_map_size"`
 	BlossomPath                          string              `json:"blossom_path"`
@@ -61,6 +60,8 @@ type Config struct {
 	WotMinimumFollowers                  int                 `json:"wot_minimum_followers"`
 	WotFetchTimeoutSeconds               int                 `json:"wot_fetch_timeout_seconds"`
 	WotRefreshInterval                   time.Duration       `json:"wot_refresh_interval"`
+	WhitelistedPubKeys                   map[string]struct{} `json:"whitelisted_pubkeys"`
+	BlacklistedPubKeys                   map[string]struct{} `json:"blacklisted_pubkeys"`
 	LogLevel                             string              `json:"log_level"`
 	BlastrRelays                         []string            `json:"blastr_relays"`
 	S3Config                             *S3Config           `json:"s3_config"`
@@ -69,10 +70,9 @@ type Config struct {
 func loadConfig() Config {
 	_ = godotenv.Load(".env")
 
-	return Config{
+	cfg := Config{
 		OwnerNpub:                            getEnv("OWNER_NPUB"),
 		OwnerPubKey:                          nPubToPubkey(getEnv("OWNER_NPUB")),
-		WhitelistedPubKeys:                   getNpubsFromFile(getEnvString("WHITELISTED_NPUBS_FILE", "")),
 		DBEngine:                             getEnvString("DB_ENGINE", "lmdb"),
 		LmdbMapSize:                          getEnvInt64("LMDB_MAPSIZE", 0),
 		BlossomPath:                          getEnvString("BLOSSOM_PATH", "blossom"),
@@ -109,10 +109,18 @@ func loadConfig() Config {
 		WotMinimumFollowers:                  getEnvInt("WOT_MINIMUM_FOLLOWERS", 0),
 		WotFetchTimeoutSeconds:               getEnvInt("WOT_FETCH_TIMEOUT_SECONDS", 30),
 		WotRefreshInterval:                   getEnvDuration("WOT_REFRESH_INTERVAL", 24*time.Hour),
+		WhitelistedPubKeys:                   getNpubsFromFile(getEnvString("WHITELISTED_NPUBS_FILE", "")),
+		BlacklistedPubKeys:                   getNpubsFromFile(getEnvString("BLACKLISTED_NPUBS_FILE", "")),
 		LogLevel:                             getEnvString("HAVEN_LOG_LEVEL", "INFO"),
 		BlastrRelays:                         getRelayListFromFile(getEnv("BLASTR_RELAYS_FILE")),
 		S3Config:                             getS3Config(),
 	}
+
+	// Relay owner is always whitelisted
+	cfg.WhitelistedPubKeys[cfg.OwnerPubKey] = struct{}{}
+
+	return cfg
+
 }
 
 func getVersion() string {
@@ -161,11 +169,10 @@ func getRelayListFromFile(filePath string) []string {
 }
 
 func getNpubsFromFile(filePath string) map[string]struct{} {
-	whitelist := map[string]struct{}{}
-	whitelist[nPubToPubkey(getEnv("OWNER_NPUB"))] = struct{}{}
+	pubKeys := map[string]struct{}{}
 	if filePath == "" {
-		// No whitelist file, only owner will be whitelisted"
-		return whitelist
+		// No pubKeys file, only owner will be whitelisted"
+		return pubKeys
 	}
 	file, err := os.ReadFile(filePath)
 	if err != nil {
@@ -179,9 +186,9 @@ func getNpubsFromFile(filePath string) map[string]struct{} {
 
 	for _, npub := range npubs {
 		npub = strings.TrimSpace(npub)
-		whitelist[nPubToPubkey(npub)] = struct{}{}
+		pubKeys[nPubToPubkey(npub)] = struct{}{}
 	}
-	return whitelist
+	return pubKeys
 }
 
 func getEnv(key string) string {

@@ -237,7 +237,7 @@ func initRelays(ctx context.Context) {
 		authenticatedUser := khatru.GetAuthed(ctx)
 
 		if !wot.GetInstance().Has(ctx, authenticatedUser) {
-			return true, "you must be in the web of trust to write to this relay"
+			return true, "you must be in the web of trust to query this relay"
 		}
 
 		return false, ""
@@ -272,10 +272,19 @@ func initRelays(ctx context.Context) {
 	}
 
 	chatRelay.RejectEvent = append(chatRelay.RejectEvent, func(ctx context.Context, event *nostr.Event) (bool, string) {
+		authenticatedUser := khatru.GetAuthed(ctx)
+		if authenticatedUser == "" {
+			return true, "auth-required: publishing this event requires authentication"
+		}
+		if _, ok := config.BlacklistedPubKeys[authenticatedUser]; ok {
+			return true, "you are blacklisted from this relay"
+		}
+		if !wot.GetInstance().Has(ctx, authenticatedUser) {
+			return true, "you must be in the web of trust to write to this relay"
+		}
 		if _, has := allowedKinds[event.Kind]; has {
 			return false, ""
 		}
-
 		return true, "only chat related events are allowed"
 	})
 
@@ -441,18 +450,18 @@ func initRelays(ctx context.Context) {
 	inboxRelay.ReplaceEvent = append(inboxRelay.ReplaceEvent, inboxDB.ReplaceEvent)
 
 	inboxRelay.RejectEvent = append(inboxRelay.RejectEvent, func(ctx context.Context, event *nostr.Event) (bool, string) {
+		if _, ok := config.BlacklistedPubKeys[event.PubKey]; ok {
+			return true, "you are blacklisted from this relay"
+		}
 		if !wot.GetInstance().Has(ctx, event.PubKey) {
 			return true, "you must be in the web of trust to post to this relay"
 		}
-
 		if event.Kind == nostr.KindEncryptedDirectMessage {
 			return true, "only gift wrapped DMs are supported"
 		}
-
 		if event.Tags.FindWithValue("p", inboxRelay.Info.PubKey) != nil {
 			return false, ""
 		}
-
 		return true, "you can only post notes if you've tagged a whitelisted pubkey in this relay"
 	})
 
