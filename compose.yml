@@ -17,7 +17,7 @@ services:
       - ./relays_blastr.json:/home/nonroot/relays_blastr.json:ro
       - ./relays_import.json:/home/nonroot/relays_import.json:ro
       - ./whitelisted_npubs.json:/home/nonroot/whitelisted_npubs.json:ro
-      - ./blaclisted_npubs.json:/home/nonroot/blaclisted_npubs.json:ro
+      - ./blacklisted_npubs.json:/home/nonroot/blacklisted_npubs.json:ro
     restart: unless-stopped
 
   nginx-proxy:
