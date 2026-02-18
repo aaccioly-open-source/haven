@@ -37,10 +37,15 @@ otherwise be allowed by the Web of Trust.
 ### Effects of Blacklisting:
 - **Chat Relay**: Blacklisted users cannot send DMs or messages to your Chat relay.
 - **Inbox Relay**: Notes from blacklisted users will be rejected by your Inbox relay.
+- **Import**: Events from blacklisted users will be skipped when importing from external relays (e.g., using 
+- `./haven import` or from the live subscription to import relays).
 
 > [!NOTE]
 > Blacklisting does not affect Blossom Media Server access, Outbox publishing, or private relay access. In theory, you 
 > could simultaneously whitelist and blacklist the same npub, which makes very little sense.
+
+> [!IMPORTANT]
+> Blacklisting has no effect when [importing JSONL files](backup.md#manual-restore).
 
 ### How to configure a Blacklist:
 1. Create a JSON file (e.g., `blacklisted_npubs.json`) containing an array of npubs:

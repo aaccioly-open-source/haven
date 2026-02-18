@@ -104,6 +104,10 @@ func importOwnerNotes(ctx context.Context) {
 				if ctx.Err() != nil {
 					break // Stop the loop on timeout
 				}
+				if _, ok := config.BlacklistedPubKeys[ev.PubKey]; ok {
+					slog.Debug("🚫 skipping event from blacklisted pubkey", "pubkey", ev.PubKey, "id", ev.ID)
+					continue
+				}
 				if err := wdb.Publish(ctx, *ev.Event); err != nil {
 					log.Println("🚫  error importing note", ev.ID, ":", err)
 					nFailedImportNotes++
@@ -165,6 +169,11 @@ func importTaggedNotes(ctx context.Context) {
 				break // Stop the loop on timeout
 			}
 
+			if _, ok := config.BlacklistedPubKeys[ev.PubKey]; ok {
+				slog.Debug("🚫 skipping tagged event from blacklisted pubkey", "pubkey", ev.PubKey, "id", ev.ID)
+				continue
+			}
+
 			if !wot.GetInstance().Has(ctx, ev.PubKey) && ev.Kind != nostr.KindGiftWrap {
 				continue
 			}
@@ -211,6 +220,10 @@ func subscribeInboxAndChat(ctx context.Context) {
 	log.Println("📢 subscribing to inbox")
 
 	for ev := range pool.SubscribeMany(ctx, config.ImportSeedRelays, filter) {
+		if _, ok := config.BlacklistedPubKeys[ev.PubKey]; ok {
+			slog.Debug("🚫 skipping inbox/chat event from blacklisted pubkey", "pubkey", ev.PubKey, "id", ev.ID)
+			continue
+		}
 		if !wot.GetInstance().Has(ctx, ev.PubKey) && ev.Kind != nostr.KindGiftWrap {
 			continue
 		}
