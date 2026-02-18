@@ -236,6 +236,10 @@ func initRelays(ctx context.Context) {
 	chatRelay.RejectFilter = append(chatRelay.RejectFilter, func(ctx context.Context, filter nostr.Filter) (bool, string) {
 		authenticatedUser := khatru.GetAuthed(ctx)
 
+		if authenticatedUser == "" {
+			return true, "auth-required: querying this relay requires authentication"
+		}
+
 		if !wot.GetInstance().Has(ctx, authenticatedUser) {
 			return true, "you must be in the web of trust to query this relay"
 		}
