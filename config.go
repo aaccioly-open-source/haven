@@ -52,7 +52,6 @@ type Config struct {
 	ImportStartDate                      string              `json:"import_start_date"`
 	ImportOwnerNotesFetchTimeoutSeconds  int                 `json:"import_owned_notes_fetch_timeout_seconds"`
 	ImportTaggedNotesFetchTimeoutSeconds int                 `json:"import_tagged_fetch_timeout_seconds"`
-	ImportQueryIntervalSeconds           int                 `json:"import_query_interval_seconds"`
 	ImportSeedRelays                     []string            `json:"import_seed_relays"`
 	BackupProvider                       string              `json:"backup_provider"`
 	BackupIntervalHours                  int                 `json:"backup_interval_hours"`
@@ -101,7 +100,6 @@ func loadConfig() Config {
 		ImportStartDate:                      getEnv("IMPORT_START_DATE"),
 		ImportOwnerNotesFetchTimeoutSeconds:  getEnvInt("IMPORT_OWNER_NOTES_FETCH_TIMEOUT_SECONDS", 30),
 		ImportTaggedNotesFetchTimeoutSeconds: getEnvInt("IMPORT_TAGGED_NOTES_FETCH_TIMEOUT_SECONDS", 120),
-		ImportQueryIntervalSeconds:           getEnvInt("IMPORT_QUERY_INTERVAL_SECONDS", 360000),
 		ImportSeedRelays:                     getRelayListFromFile(getEnv("IMPORT_SEED_RELAYS_FILE")),
 		BackupProvider:                       getEnvString("BACKUP_PROVIDER", "none"),
 		BackupIntervalHours:                  getEnvInt("BACKUP_INTERVAL_HOURS", 24),
