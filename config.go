@@ -98,7 +98,7 @@ func loadConfig() Config {
 		InboxRelayIcon:                       getEnv("INBOX_RELAY_ICON"),
 		InboxPullIntervalSeconds:             getEnvInt("INBOX_PULL_INTERVAL_SECONDS", 3600),
 		ImportStartDate:                      getEnv("IMPORT_START_DATE"),
-		ImportOwnerNotesFetchTimeoutSeconds:  getEnvInt("IMPORT_OWNER_NOTES_FETCH_TIMEOUT_SECONDS", 30),
+		ImportOwnerNotesFetchTimeoutSeconds:  getEnvInt("IMPORT_OWNER_NOTES_FETCH_TIMEOUT_SECONDS", 60),
 		ImportTaggedNotesFetchTimeoutSeconds: getEnvInt("IMPORT_TAGGED_NOTES_FETCH_TIMEOUT_SECONDS", 120),
 		ImportSeedRelays:                     getRelayListFromFile(getEnv("IMPORT_SEED_RELAYS_FILE")),
 		BackupProvider:                       getEnvString("BACKUP_PROVIDER", "none"),
