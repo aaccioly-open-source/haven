@@ -221,7 +221,7 @@ func subscribeInboxAndChat(ctx context.Context) {
 
 	for ev := range pool.SubscribeMany(ctx, config.ImportSeedRelays, filter) {
 		if _, ok := config.BlacklistedPubKeys[ev.PubKey]; ok {
-			slog.Debug("🚫 skipping inbox/chat event from blacklisted pubkey", "pubkey", ev.PubKey, "id", ev.ID)
+			slog.Debug("🚫discarding imported note from blacklisted pubkey", "pubkey", ev.PubKey, "id", ev.ID)
 			continue
 		}
 		if !wot.GetInstance().Has(ctx, ev.PubKey) && ev.Kind != nostr.KindGiftWrap {
