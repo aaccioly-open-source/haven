@@ -1,6 +1,7 @@
 # Cloud Storage Provider Specific Instructions
 
-This page contains specific configuration examples for various cloud storage providers. For general instructions on how to set up periodic cloud backups, see the [Backup and Restore Documentation](backup.md#periodic-cloud-backups).
+This page contains specific configuration examples for various cloud storage providers. For general instructions on how 
+to set up periodic cloud backups, see the [Backup and Restore Documentation](backup.md#periodic-cloud-backups).
 
 ## Provider Specific Instructions
 
@@ -69,4 +70,4 @@ S3_BUCKET_NAME="haven_backup"
 
 ---
 
-[Backup and Restore](backup.md) | [README](../README.md)
+[README](../README.md) | [Backup and Restore](backup.md)
