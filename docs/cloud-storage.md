@@ -66,8 +66,6 @@ S3_BUCKET_NAME="haven_backup"
 > removed in *v1.2.0*. If you are still using the old providers, please update your `.env` file to use the new `s3` 
 > provider.
 
-*
-
 ---
 
 [README](../README.md) | [Backup and Restore](backup.md)
