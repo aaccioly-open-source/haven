@@ -403,7 +403,8 @@ sudo certbot --apache
 
 Follow the instructions to generate the certificate.
 
-Note: Command will fail if the Domain you added to nginx is not yet pointing at your machine's IP address. 
+> [!NOTE]
+> The `cerbot` command will fail if the Domain you added to nginx is not yet pointing at your machine's IP address. 
 This is done by adding an A record subdomain pointing to your IP address through your DNS recrods Manager.
 
 ### 8. Import your old notes (optional)
