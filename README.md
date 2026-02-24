@@ -6,6 +6,10 @@
 [![CI](https://github.com/bitvora/haven/actions/workflows/lint.yml/badge.svg)](https://github.com/bitvora/haven/actions/workflows/lint.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitvora/haven)](https://goreportcard.com/report/github.com/bitvora/haven)
 
+> [!IMPORTANT]
+> HAVEN is considered feature complete and, going forward, Bitvora's repository will only receive bug fixes.
+> See the announcement [here](https://jumble.social/notes/nevent1qvzqqqqqqypzpckv7l8jqspl8u4y54dn9rcduwlrs4v2040nxce0m2h0cunvrj8tqy88wumn8ghj7mn0wvhxcmmv9uq3wamnwvaz7tmjv4kxz7fwwpexjmtpdshxuet59uqzqnjwq82z3lq62mkalaxu2dlgnjxw2stcwxan9wl66s7eywwjljvqx0s8cp](https://jumble.social/notes/nevent1qvzqqqqqqypzpckv7l8jqspl8u4y54dn9rcduwlrs4v2040nxce0m2h0cunvrj8tqy88wumn8ghj7mn0wvhxcmmv9uq3wamnwvaz7tmjv4kxz7fwwpexjmtpdshxuet59uqzqnjwq82z3lq62mkalaxu2dlgnjxw2stcwxan9wl66s7eywwjljvqx0s8cp)
+
 HAVEN (High Availability Vault for Events on Nostr) is the most sovereign personal relay for the Nostr protocol, for 
 storing and backing up sensitive notes like eCash, private chats, and drafts. It is a relay that is not so dumb, with 
 features like web of trust, whitelisting, blacklisting, JSONL backup / restore (including periodic backups to the 
@@ -89,7 +93,7 @@ Check out some of the external community-built tools for managing Haven relays:
 
 If you have built a Haven relay management tool that you would like to share, please open a PR to add it to this list!
 
-> [!IMPORTANT]
+> [!NOTE]
 > The Haven team does not officially support the tools listed above. They are community-built and maintained by 
 > third parties. Please refer to the respective repositories for installation instructions, documentation, and 
 > support. If you encounter any issues with these tools, please open an issue in their respective repositories.
@@ -267,7 +271,7 @@ server {
 
 Replace `yourdomain.com` with your actual domain name.
 
-> [!NOTE]
+> **Note:**
 > [`client_max_body_size`](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size) is set to 
 > `100m` to allow for larger media files to be uploaded to Blossom. `0` can be used to allow for unlimited file 
 > sizes. If you are using Cloudflare proxy, be mindful of 
