@@ -8,7 +8,7 @@
 
 > [!IMPORTANT]
 > HAVEN is considered feature complete and, going forward, Bitvora's repository will only receive bug fixes.
-> See the announcement [here](https://jumble.social/notes/nevent1qvzqqqqqqypzpckv7l8jqspl8u4y54dn9rcduwlrs4v2040nxce0m2h0cunvrj8tqy88wumn8ghj7mn0wvhxcmmv9uq3wamnwvaz7tmjv4kxz7fwwpexjmtpdshxuet59uqzqnjwq82z3lq62mkalaxu2dlgnjxw2stcwxan9wl66s7eywwjljvqx0s8cp](https://jumble.social/notes/nevent1qvzqqqqqqypzpckv7l8jqspl8u4y54dn9rcduwlrs4v2040nxce0m2h0cunvrj8tqy88wumn8ghj7mn0wvhxcmmv9uq3wamnwvaz7tmjv4kxz7fwwpexjmtpdshxuet59uqzqnjwq82z3lq62mkalaxu2dlgnjxw2stcwxan9wl66s7eywwjljvqx0s8cp)
+> See the announcement [here](https://jumble.social/notes/nevent1qvzqqqqqqypzpckv7l8jqspl8u4y54dn9rcduwlrs4v2040nxce0m2h0cunvrj8tqy88wumn8ghj7mn0wvhxcmmv9uq3wamnwvaz7tmjv4kxz7fwwpexjmtpdshxuet59uqzqnjwq82z3lq62mkalaxu2dlgnjxw2stcwxan9wl66s7eywwjljvqx0s8cp)
 
 HAVEN (High Availability Vault for Events on Nostr) is the most sovereign personal relay for the Nostr protocol, for 
 storing and backing up sensitive notes like eCash, private chats, and drafts. It is a relay that is not so dumb, with 
